@@ -6,7 +6,7 @@ import 'dart:convert';
 import '../models/recipe_model.dart';
 
 class RecipeService {
-  final String baseUrl = 'https://dummyjson.com/recipes';
+ final String baseUrl = 'https://dummyjson.com/recipes';
 
   Future<List<Recipe>> getRecipes({int skip = 0, int limit = 10}) async {
     final uri = Uri.parse('$baseUrl?skip=$skip&limit=$limit');

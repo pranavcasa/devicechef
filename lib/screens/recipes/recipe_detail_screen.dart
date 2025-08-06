@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -5,9 +7,14 @@ import '../../data/models/recipe_model.dart';
 import '../../providers/recipe_provider.dart';
 
 class RecipeDetailScreen extends StatefulWidget {
-  final int recipeId;
+  final int? recipeId;
+  final Recipe? recipe;
 
-  const RecipeDetailScreen({super.key, required this.recipeId});
+  const RecipeDetailScreen({
+    super.key, 
+    this.recipeId,
+    this.recipe,
+  }) : assert(recipeId != null || recipe != null, 'Either recipeId or recipe must be provided');
 
   @override
   State<RecipeDetailScreen> createState() => _RecipeDetailScreenState();
@@ -22,12 +29,17 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   @override
   void initState() {
     super.initState();
-    _recipeFuture = _loadRecipe();
+    if (widget.recipe != null) {
+      _recipeFuture = Future.value(widget.recipe);
+      _editedRecipe = widget.recipe!;
+    } else {
+      _recipeFuture = _loadRecipe();
+    }
   }
 
   Future<Recipe> _loadRecipe() async {
     final recipe = await Provider.of<RecipeProvider>(context, listen: false)
-        .getRecipeById(widget.recipeId);
+        .getRecipeById(widget.recipeId!);
     _editedRecipe = recipe;
     return recipe;
   }
@@ -153,24 +165,23 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       appBar: AppBar(
         title: const Text('Recipe Details'),
         actions: [
-          IconButton(
-            icon: Icon(_isEditing ? Icons.save : Icons.edit),
-            onPressed: _toggleEdit,
-          ),
+          if (widget.recipeId != null) // Only show edit for recipes from API
+            IconButton(
+              icon: Icon(_isEditing ? Icons.save : Icons.edit),
+              onPressed: _toggleEdit,
+            ),
         ],
       ),
       body: FutureBuilder<Recipe>(
         future: _recipeFuture,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (snapshot.connectionState == ConnectionState.waiting && widget.recipe == null) {
             return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
+          } else if (snapshot.hasError && widget.recipe == null) {
             return Center(child: Text('Error: ${snapshot.error}'));
-          } else if (!snapshot.hasData) {
-            return const Center(child: Text('No recipe found'));
           }
 
-          final recipe = snapshot.data!;
+          final recipe = snapshot.data ?? widget.recipe!;
           if (_isEditing && _controllers.isEmpty) {
             _editedRecipe = recipe;
             _initControllers(recipe);
@@ -180,21 +191,33 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
             padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+        
               children: [
                 if (_isEditing)
                   _buildEditableField('Recipe Name', 'name')
                 else
                   _buildReadOnlyField('Recipe Name', recipe.name),
                 
-                if (recipe.image.isNotEmpty)
-                  Center(
-                    child: Image.network(
-                      recipe.image,
-                      height: 200,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                
+              if (recipe.image.isNotEmpty)
+  Center(
+    child: recipe.image.startsWith('http')
+        ? Image.network(
+            recipe.image,
+            height: 200,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return const Icon(Icons.broken_image, size: 100);
+            },
+          ) 
+        : Image.file(
+            File(recipe.image),
+            height: 200,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return const Icon(Icons.broken_image, size: 100);
+            },
+          ),
+  ),
                 const SizedBox(height: 16),
                 
                 if (_isEditing)

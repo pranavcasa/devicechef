@@ -131,12 +131,19 @@ class RecipeProvider with ChangeNotifier {
   // Add these missing methods
   Future<Recipe> getRecipeById(int id) async {
     try {
-      return await _recipeService.getRecipeById(id);
+      // First check local cache
+      final localRecipe = _recipes.firstWhere(
+        (recipe) => recipe.id == id,
+        orElse: () => throw Exception('Not found locally'),
+      );
+      return localRecipe;
     } catch (e) {
-      debugPrint('Error getting recipe by ID: $e');
-      rethrow;
+      // If not found locally, fetch from API
+      debugPrint('Recipe not found locally, fetching from API: $e');
+      return await _recipeService.getRecipeById(id);
     }
   }
+
 
   Future<Recipe> updateRecipe(int id, Recipe recipe) async {
     try {
@@ -146,23 +153,33 @@ class RecipeProvider with ChangeNotifier {
       rethrow;
     }
   }
-Future<Recipe> addRecipe(Recipe recipe) async {
-  _isLoading = true;
-  notifyListeners();
-
-  try {
-    final addedRecipe = await _recipeService.addRecipe(recipe);
-    _recipes.insert(0, addedRecipe); // Add at the beginning of the list
-    _filterRecipes();
-    return addedRecipe;
-  } catch (e) {
-    debugPrint('Error adding recipe: $e');
-    rethrow;
-  } finally {
-    _isLoading = false;
+ Future<Recipe> addRecipe(Recipe recipe) async {
+    _isLoading = true;
     notifyListeners();
+
+    try {
+      // Add to local list immediately
+      _recipes.insert(0, recipe);
+      _filterRecipes();
+      
+      // Then try to sync with API
+      final addedRecipe = await _recipeService.addRecipe(recipe);
+      
+      // Replace local version with server version if successful
+      _recipes.remove(recipe);
+      _recipes.insert(0, addedRecipe);
+      _filterRecipes();
+      
+      return addedRecipe;
+    } catch (e) {
+      // If API fails, keep the local version
+      debugPrint('Error adding recipe: $e');
+      return recipe;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
-}
   // Add methods to clear filters
   void clearSelectedTags() {
     _selectedTags = [];

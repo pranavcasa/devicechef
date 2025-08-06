@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:devicechef/data/models/recipe_model.dart';
 import 'package:devicechef/screens/recipes/add_recipe_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -202,17 +203,26 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
     return Consumer<RecipeProvider>(
       builder: (context, recipeProvider, child) {
         return Scaffold(
-          floatingActionButton: FloatingActionButton(
-            onPressed: () {
-              Navigator.push(
+        floatingActionButton: FloatingActionButton(
+            onPressed: () async {
+              final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => const AddRecipeScreen(),
                 ),
               );
+              
+              if (result != null && result is Recipe) {
+                // Show newly created recipe
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => RecipeDetailScreen(recipe: result),
+                  ),
+                );
+              }
             },
             child: const Icon(Icons.add),
-            tooltip: 'Add new recipe',
           ),
           appBar: AppBar(
             title: const Text('Recipes'),

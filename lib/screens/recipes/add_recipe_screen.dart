@@ -77,7 +77,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
     setState(() => _imagePath = null);
   }
 
-  Future<void> _submitForm() async {
+Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
       final newRecipe = Recipe(
         id: DateTime.now().millisecondsSinceEpoch,
@@ -92,7 +92,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
         caloriesPerServing: int.tryParse(_caloriesController.text) ?? 0,
         tags: _tags,
         userId: 1,
-        image: _imagePath ?? '', // <-- store the local path
+        image: _imagePath ?? '',
         rating: 0.0,
         reviewCount: 0,
         mealType: _mealTypes,
@@ -100,12 +100,9 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
 
       try {
         final recipeProvider = Provider.of<RecipeProvider>(context, listen: false);
-        await recipeProvider.addRecipe(newRecipe);
-
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Recipe added successfully!')),
-        );
+        final addedRecipe = await recipeProvider.addRecipe(newRecipe);
+        
+        Navigator.pop(context, addedRecipe); // Return the created recipe
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to add recipe: $e')),
@@ -113,6 +110,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
       }
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
