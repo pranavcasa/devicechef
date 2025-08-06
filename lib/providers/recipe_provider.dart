@@ -114,19 +114,30 @@ class RecipeProvider with ChangeNotifier {
     await loadRecipes();
   }
 
-  Future<bool> deleteRecipe(int id) async {
-    try {
-      final success = await _recipeService.deleteRecipe(id);
-      if (success) {
-        _recipes.removeWhere((recipe) => recipe.id == id);
-        _filterRecipes();
-      }
-      return success;
-    } catch (e) {
-      debugPrint('Error deleting recipe: $e');
-      return false;
-    }
+Future<bool> deleteRecipe(int id) async {
+  _isLoading = true;
+  notifyListeners();
+
+  try {
+    // First try to delete from API
+    final apiSuccess = await _recipeService.deleteRecipe(id);
+    
+    // Then remove from local storage regardless of API success
+    _recipes.removeWhere((recipe) => recipe.id == id);
+    _filterRecipes();
+    
+    return apiSuccess;
+  } catch (e) {
+    debugPrint('Error deleting recipe: $e');
+    // Even if API fails, remove from local storage
+    _recipes.removeWhere((recipe) => recipe.id == id);
+    _filterRecipes();
+    return false;
+  } finally {
+    _isLoading = false;
+    notifyListeners();
   }
+}
 
   // Add these missing methods
   Future<Recipe> getRecipeById(int id) async {

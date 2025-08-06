@@ -184,14 +184,22 @@ Future<Recipe> updateRecipe(int id, Recipe recipe) async {
   }
 }
 
-  Future<bool> deleteRecipe(int id) async {
-    final uri = Uri.parse('$baseUrl/$id');
-    print('DELETE Request: $uri');
-    
-    final response = await http.delete(uri);
-    print('Response status: ${response.statusCode}');
-    print('Response body: ${response.body}');
-    
-    return response.statusCode == 200;
+Future<bool> deleteRecipe(int id) async {
+  final uri = Uri.parse('$baseUrl/$id');
+  print('DELETE Request: $uri');
+  
+  final response = await http.delete(uri);
+  print('Response status: ${response.statusCode}');
+  print('Response body: ${response.body}');
+  
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    // Check if the API returned a success indicator
+    return data['isDeleted'] ?? true; // Assuming API returns isDeleted flag
+  } else {
+    throw Exception('Failed to delete recipe');
   }
+}
+
+
 }

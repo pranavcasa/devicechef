@@ -160,43 +160,45 @@ class _RecipeListScreenState extends State<RecipeListScreen> {
     );
   }
 
-  Future<void> _confirmDelete(int recipeId) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Delete Recipe'),
-            content: const Text('Are you sure you want to delete this recipe?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('Delete'),
-              ),
-            ],
-          ),
-    );
+Future<void> _confirmDelete(int recipeId) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Delete Recipe'),
+      content: const Text('Are you sure you want to delete this recipe?'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: const Text('Delete'),
+        ),
+      ],
+    ),
+  );
 
-    if (confirmed == true) {
-      final success = await Provider.of<RecipeProvider>(
-        context,
-        listen: false,
-      ).deleteRecipe(recipeId);
+  if (confirmed == true) {
+    final recipeProvider = Provider.of<RecipeProvider>(context, listen: false);
+    final success = await recipeProvider.deleteRecipe(recipeId);
 
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Recipe deleted successfully')),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to delete recipe')),
-        );
-      }
+    if (!mounted) return;
+    
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Recipe deleted successfully')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Deleted locally but failed to delete from server'),
+          duration: Duration(seconds: 2),
+        ),
+      );
     }
   }
+}
 
   @override
   Widget build(BuildContext context) {
