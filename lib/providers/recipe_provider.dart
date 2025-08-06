@@ -146,7 +146,23 @@ class RecipeProvider with ChangeNotifier {
       rethrow;
     }
   }
+Future<Recipe> addRecipe(Recipe recipe) async {
+  _isLoading = true;
+  notifyListeners();
 
+  try {
+    final addedRecipe = await _recipeService.addRecipe(recipe);
+    _recipes.insert(0, addedRecipe); // Add at the beginning of the list
+    _filterRecipes();
+    return addedRecipe;
+  } catch (e) {
+    debugPrint('Error adding recipe: $e');
+    rethrow;
+  } finally {
+    _isLoading = false;
+    notifyListeners();
+  }
+}
   // Add methods to clear filters
   void clearSelectedTags() {
     _selectedTags = [];
