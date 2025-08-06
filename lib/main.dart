@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'providers/auth_provider.dart';
+import 'providers/recipe_provider.dart'; // Add this import
 import 'screens/auth/login_screen.dart';
 import 'screens/home_screen.dart';
 
@@ -22,6 +23,7 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => RecipeProvider()), // Add this provider
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

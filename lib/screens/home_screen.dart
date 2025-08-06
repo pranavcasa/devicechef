@@ -1,9 +1,9 @@
+import 'package:devicechef/screens/recipes/recipes_screen.dart';
 import 'package:flutter/material.dart';
 import '../widgets/custom_drawer.dart';
 import 'profile/profile_screen.dart';
 import 'device_info/device_info_screen.dart';
 import 'image_picker/image_picker_screen.dart';
-import 'recipes/recipes_screen.dart';
 import '../core/battery_helper.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -22,7 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ProfileScreen(),
     DeviceInfoScreen(),
     ImagePickerScreen(),
-    RecipesScreen(),
+    RecipeListScreen(), // This should match your recipe list screen
   ];
 
   @override
