@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -7,7 +9,13 @@ class RecipeService {
   final String baseUrl = 'https://dummyjson.com/recipes';
 
   Future<List<Recipe>> getRecipes({int skip = 0, int limit = 10}) async {
-    final response = await http.get(Uri.parse('$baseUrl?skip=$skip&limit=$limit'));
+    final uri = Uri.parse('$baseUrl?skip=$skip&limit=$limit');
+    print('GET Request: $uri');
+    
+    final response = await http.get(uri);
+    print('Response status: ${response.statusCode}');
+    print('Response body: ${response.body}');
+    
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       final List<dynamic> recipesJson = data['recipes'];
@@ -18,7 +26,13 @@ class RecipeService {
   }
 
   Future<Recipe> getRecipeById(int id) async {
-    final response = await http.get(Uri.parse('$baseUrl/$id'));
+    final uri = Uri.parse('$baseUrl/$id');
+    print('GET Request: $uri');
+    
+    final response = await http.get(uri);
+    print('Response status: ${response.statusCode}');
+    print('Response body: ${response.body}');
+    
     if (response.statusCode == 200) {
       return Recipe.fromJson(json.decode(response.body));
     } else {
@@ -27,7 +41,13 @@ class RecipeService {
   }
 
   Future<List<Recipe>> searchRecipes(String query) async {
-    final response = await http.get(Uri.parse('$baseUrl/search?q=$query'));
+    final uri = Uri.parse('$baseUrl/search?q=$query');
+    print('GET Request: $uri');
+    
+    final response = await http.get(uri);
+    print('Response status: ${response.statusCode}');
+    print('Response body: ${response.body}');
+    
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       final List<dynamic> recipesJson = data['recipes'];
@@ -38,7 +58,13 @@ class RecipeService {
   }
 
   Future<List<Recipe>> getRecipesByTag(String tag) async {
-    final response = await http.get(Uri.parse('$baseUrl/tag/$tag'));
+    final uri = Uri.parse('$baseUrl/tag/$tag');
+    print('GET Request: $uri');
+    
+    final response = await http.get(uri);
+    print('Response status: ${response.statusCode}');
+    print('Response body: ${response.body}');
+    
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       final List<dynamic> recipesJson = data['recipes'];
@@ -49,7 +75,13 @@ class RecipeService {
   }
 
   Future<List<Recipe>> getRecipesByMealType(String mealType) async {
-    final response = await http.get(Uri.parse('$baseUrl/meal-type/$mealType'));
+    final uri = Uri.parse('$baseUrl/meal-type/$mealType');
+    print('GET Request: $uri');
+    
+    final response = await http.get(uri);
+    print('Response status: ${response.statusCode}');
+    print('Response body: ${response.body}');
+    
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       final List<dynamic> recipesJson = data['recipes'];
@@ -60,7 +92,13 @@ class RecipeService {
   }
 
   Future<List<String>> getTags() async {
-    final response = await http.get(Uri.parse('$baseUrl/tags'));
+    final uri = Uri.parse('$baseUrl/tags');
+    print('GET Request: $uri');
+    
+    final response = await http.get(uri);
+    print('Response status: ${response.statusCode}');
+    print('Response body: ${response.body}');
+    
     if (response.statusCode == 200) {
       final List<dynamic> tagsJson = json.decode(response.body);
       return tagsJson.map((tag) => tag.toString()).toList();
@@ -70,12 +108,24 @@ class RecipeService {
   }
 
   Future<Recipe> addRecipe(Recipe recipe) async {
+    final uri = Uri.parse('$baseUrl/add');
+    final body = json.encode(recipe.toJson());
+    
+    print('POST Request: $uri');
+    print('Request body: $body');
+    
     final response = await http.post(
-      Uri.parse('$baseUrl/add'),
+      uri,
       headers: {'Content-Type': 'application/json'},
-      body: json.encode(recipe.toJson()),
+      body: body,
     );
+    
+    print('Response status: ${response.statusCode}');
+    print('Response body: ${response.body}');
+    
     if (response.statusCode == 200) {
+      log("message: ${response.body}");
+      log("status code: ${response.statusCode}");
       return Recipe.fromJson(json.decode(response.body));
     } else {
       throw Exception('Failed to add recipe');
@@ -83,20 +133,37 @@ class RecipeService {
   }
 
   Future<Recipe> updateRecipe(int id, Recipe recipe) async {
+    final uri = Uri.parse('https://dummyjson.com/recipes/$id');
+    final body = json.encode(recipe.toJson());
+    
+    print('PUT Request: $uri');
+    print('Request body: $body');
+    
     final response = await http.put(
-      Uri.parse('$baseUrl/$id'),
+      uri,
       headers: {'Content-Type': 'application/json'},
-      body: json.encode(recipe.toJson()),
+      body: body,
     );
+    
+
+    
     if (response.statusCode == 200) {
-      return Recipe.fromJson(json.decode(response.body));
+      log('Response status: ${response.statusCode}');
+    log('Response body: ${response.body}');
+      return Recipe.fromJson(json.decode(response.body)); 
     } else {
       throw Exception('Failed to update recipe');
     }
   }
 
   Future<bool> deleteRecipe(int id) async {
-    final response = await http.delete(Uri.parse('$baseUrl/$id'));
+    final uri = Uri.parse('$baseUrl/$id');
+    print('DELETE Request: $uri');
+    
+    final response = await http.delete(uri);
+    print('Response status: ${response.statusCode}');
+    print('Response body: ${response.body}');
+    
     return response.statusCode == 200;
   }
 }
