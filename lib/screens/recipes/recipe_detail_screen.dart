@@ -22,8 +22,14 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
   @override
   void initState() {
     super.initState();
-    _recipeFuture = Provider.of<RecipeProvider>(context, listen: false)
+    _recipeFuture = _loadRecipe();
+  }
+
+  Future<Recipe> _loadRecipe() async {
+    final recipe = await Provider.of<RecipeProvider>(context, listen: false)
         .getRecipeById(widget.recipeId);
+    _editedRecipe = recipe;
+    return recipe;
   }
 
   @override
@@ -40,6 +46,10 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     _controllers['cookTime'] = TextEditingController(text: recipe.cookTimeMinutes.toString());
     _controllers['servings'] = TextEditingController(text: recipe.servings.toString());
     
+    // Clear existing ingredient controllers
+    _controllers.removeWhere((key, _) => key.startsWith('ingredient_'));
+    
+    // Add new ingredient controllers
     for (var i = 0; i < recipe.ingredients.length; i++) {
       _controllers['ingredient_$i'] = TextEditingController(text: recipe.ingredients[i]);
     }
@@ -50,36 +60,63 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       _isEditing = !_isEditing;
       if (!_isEditing) {
         _saveChanges();
+      } else {
+        // Initialize controllers when entering edit mode
+        if (_controllers.isEmpty && _editedRecipe != null) {
+          _initControllers(_editedRecipe);
+        }
       }
     });
   }
 
-  Future<void> _saveChanges() async {
-    try {
-      // Update the edited recipe with values from controllers
-      _editedRecipe = _editedRecipe.copyWith(
-        name: _controllers['name']!.text,
-        prepTimeMinutes: int.tryParse(_controllers['prepTime']!.text) ?? _editedRecipe.prepTimeMinutes,
-        cookTimeMinutes: int.tryParse(_controllers['cookTime']!.text) ?? _editedRecipe.cookTimeMinutes,
-        servings: int.tryParse(_controllers['servings']!.text) ?? _editedRecipe.servings,
-        ingredients: _controllers.entries
-            .where((entry) => entry.key.startsWith('ingredient_'))
-            .map((entry) => entry.value.text)
-            .toList(),
-      );
+ Future<void> _saveChanges() async {
+  // Save local changes before API call (optimistic update)
+  final previousRecipe = _editedRecipe;
 
-      await Provider.of<RecipeProvider>(context, listen: false)
-          .updateRecipe(_editedRecipe.id, _editedRecipe);
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Recipe updated successfully')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update recipe: $e')),
-      );
-    }
+  _editedRecipe = _editedRecipe.copyWith(
+    name: _controllers['name']!.text,
+    prepTimeMinutes: int.tryParse(_controllers['prepTime']!.text) ?? _editedRecipe.prepTimeMinutes,
+    cookTimeMinutes: int.tryParse(_controllers['cookTime']!.text) ?? _editedRecipe.cookTimeMinutes,
+    servings: int.tryParse(_controllers['servings']!.text) ?? _editedRecipe.servings,
+    ingredients: _controllers.entries
+        .where((entry) => entry.key.startsWith('ingredient_'))
+        .map((entry) => entry.value.text)
+        .toList(),
+  );
+
+  // Update UI instantly
+  setState(() {
+    _recipeFuture = Future.value(_editedRecipe);
+    _isEditing = false;
+  });
+
+  try {
+    // Call API to persist changes
+    final updatedRecipe = await Provider.of<RecipeProvider>(context, listen: false)
+        .updateRecipe(_editedRecipe.id, _editedRecipe);
+
+    // Replace local recipe with API response (if valid)
+    setState(() {
+      _editedRecipe = updatedRecipe;
+      _initControllers(updatedRecipe);
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Recipe updated successfully')),
+    );
+  } catch (e) {
+    // Revert changes if API fails
+    setState(() {
+      _editedRecipe = previousRecipe;
+      _initControllers(previousRecipe);
+      _isEditing = true;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Failed to update recipe: $e')),
+    );
   }
+}
 
   Widget _buildEditableField(String label, String controllerKey) {
     return Padding(
@@ -259,46 +296,6 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
           );
         },
       ),
-    );
-  }
-}
-
-extension RecipeCopyWith on Recipe {
-  Recipe copyWith({
-    int? id,
-    String? name,
-    List<String>? ingredients,
-    List<String>? instructions,
-    int? prepTimeMinutes,
-    int? cookTimeMinutes,
-    int? servings,
-    String? difficulty,
-    String? cuisine,
-    int? caloriesPerServing,
-    List<String>? tags,
-    int? userId,
-    String? image,
-    double? rating,
-    int? reviewCount,
-    List<String>? mealType,
-  }) {
-    return Recipe(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      ingredients: ingredients ?? this.ingredients,
-      instructions: instructions ?? this.instructions,
-      prepTimeMinutes: prepTimeMinutes ?? this.prepTimeMinutes,
-      cookTimeMinutes: cookTimeMinutes ?? this.cookTimeMinutes,
-      servings: servings ?? this.servings,
-      difficulty: difficulty ?? this.difficulty,
-      cuisine: cuisine ?? this.cuisine,
-      caloriesPerServing: caloriesPerServing ?? this.caloriesPerServing,
-      tags: tags ?? this.tags,
-      userId: userId ?? this.userId,
-      image: image ?? this.image,
-      rating: rating ?? this.rating,
-      reviewCount: reviewCount ?? this.reviewCount,
-      mealType: mealType ?? this.mealType,
     );
   }
 }

@@ -132,29 +132,57 @@ class RecipeService {
     }
   }
 
-  Future<Recipe> updateRecipe(int id, Recipe recipe) async {
-    final uri = Uri.parse('https://dummyjson.com/recipes/$id');
-    final body = json.encode(recipe.toJson());
-    
-    print('PUT Request: $uri');
-    print('Request body: $body');
-    
-    final response = await http.put(
-      uri,
-      headers: {'Content-Type': 'application/json'},
-      body: body,
-    );
-    
+Future<Recipe> updateRecipe(int id, Recipe recipe) async {
+  final uri = Uri.parse('https://dummyjson.com/recipes/$id');
 
-    
-    if (response.statusCode == 200) {
-      log('Response status: ${response.statusCode}');
-    log('Response body: ${response.body}');
-      return Recipe.fromJson(json.decode(response.body)); 
-    } else {
-      throw Exception('Failed to update recipe');
+  // Filter only fields DummyJSON supports in update
+  final updateData = {
+    'name': recipe.name,
+    'prepTimeMinutes': recipe.prepTimeMinutes,
+    'cookTimeMinutes': recipe.cookTimeMinutes,
+    'servings': recipe.servings,
+    'difficulty': recipe.difficulty,
+    'cuisine': recipe.cuisine,
+    'caloriesPerServing': recipe.caloriesPerServing,
+    'tags': recipe.tags,
+    'mealType': recipe.mealType,
+    'ingredients': recipe.ingredients,
+    'instructions': recipe.instructions,
+    'rating': recipe.rating,
+  };
+
+  print('PUT Request: $uri');
+  print('Request body: ${jsonEncode(updateData)}');
+
+  final response = await http.put(
+    uri,
+    headers: {'Content-Type': 'application/json'},
+    body: jsonEncode(updateData),
+  );
+
+  print('Response status from updatedRecipe: ${response.statusCode}');
+  print('Response body from updatedRecipe: ${response.body}');
+
+  if (response.statusCode == 200) {
+    try {
+      final jsonResponse = json.decode(response.body);
+      if (jsonResponse is Map<String, dynamic> && jsonResponse.isNotEmpty) {
+        return Recipe.fromJson(jsonResponse);
+      } else {
+        print('⚠️ API returned empty or invalid JSON, using local recipe.');
+        return recipe;
+      }
+    } catch (e, stackTrace) {
+      print('❌ JSON Parsing Error: $e');
+      print('StackTrace: $stackTrace');
+      rethrow;
     }
+  } else {
+    throw Exception(
+      'Failed to update recipe. Status code: ${response.statusCode}, Body: ${response.body}',
+    );
   }
+}
 
   Future<bool> deleteRecipe(int id) async {
     final uri = Uri.parse('$baseUrl/$id');
