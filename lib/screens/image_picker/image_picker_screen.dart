@@ -26,27 +26,63 @@ class _ImagePickerScreenState extends State<ImagePickerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      //pBar: AppBar(title: const Text('Image Picker')),
+
+      // Full screen image area
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _selectedImagePath == null
-                ? const Text('No Image Selected')
-                : Image.file(File(_selectedImagePath!), height: 200),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _pickImage,
-              child: Text(_selectedImagePath == null ? 'Pick Image' : 'Change Image'),
+        child: _selectedImagePath == null
+            ? const Text(
+                'No Image Selected',
+                style: TextStyle(fontSize: 18),
+              )
+            : Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: InteractiveViewer(
+                  child: Image.file(
+                    File(_selectedImagePath!),
+                    fit: BoxFit.fill,// full fit to screen
+                    width: double.infinity,
+                    height: double.infinity,
+                  ),
+                ),
             ),
-            if (_selectedImagePath != null) ...[
-              const SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: _clearImage,
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                child: const Text('Clear Image'),
+      ),
+
+      // Sticky bottom buttons
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              MaterialButton(
+                color: Colors.blue,
+                textColor: Colors.white,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
+                onPressed: _pickImage,
+                child: Text(_selectedImagePath == null
+                    ? 'Pick Image'
+                    : 'Change Image'),
               ),
-            ]
-          ],
+              if (_selectedImagePath != null) ...[
+                const SizedBox(height: 10),
+                MaterialButton(
+                  color: Colors.red,
+                  textColor: Colors.white,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                  onPressed: _clearImage,
+                  child: const Text('Clear Image'),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );
