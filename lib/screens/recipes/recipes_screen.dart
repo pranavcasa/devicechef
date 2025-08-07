@@ -66,6 +66,93 @@ class _RecipeListScreenState extends State<RecipeListScreen> with TickerProvider
       _fabAnimationController.forward();
     });
   }
+void _showFilters(BuildContext context) {
+  final recipeProvider = Provider.of<RecipeProvider>(context, listen: false);
+
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (context) {
+      return StatefulBuilder(
+        builder: (context, setModalState) {
+          return Padding(
+            padding: const EdgeInsets.all(20),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Filter Recipes',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text('Tags', style: TextStyle(fontWeight: FontWeight.bold)),
+                  Wrap(
+                    spacing: 8,
+                    children: recipeProvider.tags.map((tag) {
+                      return FilterChip(
+                        label: Text(tag),
+                        selected: recipeProvider.selectedTags.contains(tag),
+                        onSelected: (selected) {
+                          recipeProvider.toggleTag(tag);
+                          setModalState(() {});
+                        },
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text('Meal Types', style: TextStyle(fontWeight: FontWeight.bold)),
+                  Wrap(
+                    spacing: 8,
+                    children: recipeProvider.mealTypes.map((type) {
+                      return FilterChip(
+                        label: Text(type),
+                        selected: recipeProvider.selectedMealTypes.contains(type),
+                        onSelected: (selected) {
+                          recipeProvider.toggleMealType(type);
+                          setModalState(() {});
+                        },
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton(
+                        onPressed: () {
+                          recipeProvider.clearSelectedTags();
+                          recipeProvider.clearSelectedMealTypes();
+                          recipeProvider.setSearchQuery('');
+                          _searchController.clear();
+                          recipeProvider.refreshRecipes();
+                          Navigator.pop(context);
+                        },
+                        child: const Text('Reset Filters'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          recipeProvider.refreshRecipes();
+                          Navigator.pop(context);
+                        },
+                        child: const Text('Apply Filters'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    },
+  );
+}
 
   @override
   void dispose() {
@@ -466,20 +553,36 @@ class _RecipeListScreenState extends State<RecipeListScreen> with TickerProvider
                                   ],
                                 ),
                               ),
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: IconButton(
-                                  icon: Icon(
-                                    _showSearchBar ? Icons.close : Icons.search,
-                                    color: Colors.white,
-                                    size: 24,
-                                  ),
-                                  onPressed: _toggleSearch,
-                                ),
-                              ),
+                            Row(
+  children: [
+    Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: IconButton(
+        icon: Icon(
+          _showSearchBar ? Icons.close : Icons.search,
+          color: Colors.white,
+          size: 24,
+        ),
+        onPressed: _toggleSearch,
+      ),
+    ),
+    const SizedBox(width: 8),
+    Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: IconButton(
+        icon: const Icon(Icons.filter_list, color: Colors.white),
+        onPressed: () => _showFilters(context),
+      ),
+    ),
+  ],
+),
+
                             ],
                           ),
                           if (_showSearchBar)
