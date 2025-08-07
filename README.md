@@ -57,7 +57,7 @@ DeviceChef is a clean, modular, and fully functional Flutter Android app built a
 
 📸 Screenshots
 
-(Add screenshots here)
+[(Add screenshots here)](https://github.com/pranavcasa/devicechef/blob/eeff543d13ea2e0246f2ce5d22cc4959ecc0ca5e/Screenshot_1754571369.png)
 
 🚀 How to Run
 
