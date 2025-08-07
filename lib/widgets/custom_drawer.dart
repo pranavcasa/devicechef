@@ -14,68 +14,78 @@ class CustomDrawer extends StatelessWidget {
         color: Colors.grey[100],
         child: Column(
           children: [
-            // Drawer Header with gradient and avatar
+            // Beautiful Header
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Colors.blue, Colors.blueAccent],
+                  colors: [Color(0xFF2196F3), Color(0xFF64B5F6)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
                   const CircleAvatar(
                     radius: 35,
                     backgroundColor: Colors.white,
                     child: Icon(Icons.person, size: 40, color: Colors.blue),
                   ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'Welcome!',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
+                  const SizedBox(width: 15),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Welcome!',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        'Device Chef',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 14,
                         ),
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    'Device Chef',
-                    style: TextStyle(color: Colors.white.withOpacity(0.9)),
-                  ),
+                      ),
+                    ],
+                  )
                 ],
               ),
             ),
 
-            // Menu items
+            // Menu Items
             Expanded(
               child: ListView(
-                padding: EdgeInsets.zero,
+                padding: const EdgeInsets.symmetric(vertical: 10),
                 children: [
                   _buildDrawerItem(
-                    icon: Icons.person,
+                    icon: Icons.person_outline,
                     text: 'Profile',
                     onTap: () => onSelect(0),
                   ),
                   _buildDrawerItem(
-                    icon: Icons.devices,
+                    icon: Icons.devices_other,
                     text: 'Device Info',
                     onTap: () => onSelect(1),
                   ),
                   _buildDrawerItem(
-                    icon: Icons.image,
+                    icon: Icons.image_outlined,
                     text: 'Image Picker',
                     onTap: () => onSelect(2),
                   ),
                   _buildDrawerItem(
-                    icon: Icons.receipt_long,
+                    icon: Icons.receipt,
                     text: 'Recipes',
                     onTap: () => onSelect(3),
                   ),
-                  const Divider(height: 30),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    child: Divider(thickness: 1),
+                  ),
                   _buildDrawerItem(
                     icon: Icons.logout,
                     text: 'Logout',
@@ -103,16 +113,25 @@ class CustomDrawer extends StatelessWidget {
     required VoidCallback onTap,
     Color color = Colors.black87,
   }) {
-    return ListTile(
-      leading: Icon(icon, color: color),
-      title: Text(
-        text,
-        style: TextStyle(color: color, fontWeight: FontWeight.w500),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      child: Card(
+        elevation: 1,
+        color: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        child: ListTile(
+          leading: Icon(icon, color: color),
+          title: Text(
+            text,
+            style: TextStyle(color: color, fontWeight: FontWeight.w500),
+          ),
+          trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+          onTap: onTap,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          hoverColor: Colors.blue.withOpacity(0.08),
+          splashColor: Colors.blue.withOpacity(0.1),
+        ),
       ),
-      horizontalTitleGap: 5,
-      onTap: onTap,
-      hoverColor: Colors.blue.withOpacity(0.1),
-      splashColor: Colors.blue.withOpacity(0.2),
     );
   }
 }

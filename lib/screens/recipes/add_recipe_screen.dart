@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../data/models/recipe_model.dart';
 import '../../providers/recipe_provider.dart';
-import '../../core/image_picker_helper.dart'; // <-- Import helper
+import '../../core/image_picker_helper.dart';
 
 class AddRecipeScreen extends StatefulWidget {
   const AddRecipeScreen({Key? key}) : super(key: key);
@@ -15,7 +15,7 @@ class AddRecipeScreen extends StatefulWidget {
 class _AddRecipeScreenState extends State<AddRecipeScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // Existing controllers...
+  // Controllers
   final _nameController = TextEditingController();
   final _prepTimeController = TextEditingController();
   final _cookTimeController = TextEditingController();
@@ -33,7 +33,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
   List<String> _tags = [];
   List<String> _mealTypes = [];
 
-  String? _imagePath; // <-- Local image file path
+  String? _imagePath;
 
   @override
   void dispose() {
@@ -52,9 +52,9 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
   }
 
   void _addItem(List<String> list, String item, TextEditingController controller) {
-    if (item.isNotEmpty) {
+    if (item.trim().isNotEmpty) {
       setState(() {
-        list.add(item);
+        list.add(item.trim());
         controller.clear();
       });
     }
@@ -77,7 +77,7 @@ class _AddRecipeScreenState extends State<AddRecipeScreen> {
     setState(() => _imagePath = null);
   }
 
-Future<void> _submitForm() async {
+  Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
       final newRecipe = Recipe(
         id: DateTime.now().millisecondsSinceEpoch,
@@ -102,205 +102,439 @@ Future<void> _submitForm() async {
         final recipeProvider = Provider.of<RecipeProvider>(context, listen: false);
         final addedRecipe = await recipeProvider.addRecipe(newRecipe);
         
-        Navigator.pop(context, addedRecipe); // Return the created recipe
+        Navigator.pop(context, addedRecipe);
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to add recipe: $e')),
+          SnackBar(
+            content: Text('Failed to add recipe: $e'),
+            backgroundColor: Colors.red.shade400,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
         );
       }
     }
   }
 
+  Widget _buildSectionCard({required String title, required Widget child, IconData? icon}) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      margin: const EdgeInsets.only(bottom: 20),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                if (icon != null) ...[
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(icon, color: Theme.of(context).primaryColor, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                ],
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).primaryColor,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStyledTextField({
+    required TextEditingController controller,
+    required String label,
+    String? hint,
+    TextInputType? keyboardType,
+    String? Function(String?)? validator,
+    IconData? prefixIcon,
+    int maxLines = 1,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: keyboardType,
+        validator: validator,
+        maxLines: maxLines,
+        decoration: InputDecoration(
+          labelText: label,
+          hintText: hint,
+          prefixIcon: prefixIcon != null ? Icon(prefixIcon, size: 20) : null,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Theme.of(context).primaryColor, width: 2),
+          ),
+          filled: true,
+          fillColor: Colors.grey.shade50,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImagePicker() {
+    return _buildSectionCard(
+      title: 'Recipe Photo',
+      icon: Icons.photo_camera,
+      child: GestureDetector(
+        onTap: _pickImage,
+        child: Container(
+          height: 200,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade300, width: 2, style: BorderStyle.solid),
+            color: _imagePath == null ? Colors.grey.shade100 : null,
+          ),
+          child: _imagePath == null
+              ? Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.add_a_photo, size: 50, color: Colors.grey.shade400),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Tap to add a photo',
+                      style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
+                    ),
+                  ],
+                )
+              : Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.file(
+                        File(_imagePath!),
+                        height: 200,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: GestureDetector(
+                        onTap: _clearImage,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.7),
+                            shape: BoxShape.circle,
+                          ),
+                          padding: const EdgeInsets.all(8),
+                          child: const Icon(Icons.close, color: Colors.white, size: 20),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildListSection({
+    required String title,
+    required IconData icon,
+    required List<String> items,
+    required TextEditingController controller,
+    required String hintText,
+    bool useChips = false,
+  }) {
+    return _buildSectionCard(
+      title: title,
+      icon: icon,
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: controller,
+                  decoration: InputDecoration(
+                    hintText: hintText,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Theme.of(context).primaryColor, width: 2),
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey.shade50,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
+                  onSubmitted: (value) => _addItem(items, value, controller),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.add, color: Colors.white),
+                  onPressed: () => _addItem(items, controller.text, controller),
+                ),
+              ),
+            ],
+          ),
+          if (items.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            if (useChips)
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: items.map((item) => Chip(
+                  label: Text(item),
+                  backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+                  deleteIcon: const Icon(Icons.close, size: 18),
+                  onDeleted: () => _removeItem(items, items.indexOf(item)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                )).toList(),
+              )
+            else
+              ...items.asMap().entries.map((entry) => Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).primaryColor,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${entry.key + 1}',
+                          style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(child: Text(entry.value)),
+                    IconButton(
+                      icon: Icon(Icons.delete_outline, color: Colors.red.shade400),
+                      onPressed: () => _removeItem(items, entry.key),
+                      constraints: const BoxConstraints(),
+                      padding: EdgeInsets.zero,
+                    ),
+                  ],
+                ),
+              )),
+          ],
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Add New Recipe')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
+      backgroundColor: Colors.grey.shade50,
+      appBar: AppBar(
+        title: const Text('Add New Recipe', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        foregroundColor: Colors.black87,
+        centerTitle: true,
+      ),
+      body: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Image picker preview
-              GestureDetector(
-                onTap: _pickImage,
-                child: _imagePath == null
-                    ? Container(
-                        height: 150,
-                        width: double.infinity,
-                        color: Colors.grey[300],
-                        child: const Icon(Icons.add_a_photo, size: 50, color: Colors.black54),
-                      )
-                    : Stack(
-                        children: [
-                          Image.file(File(_imagePath!), height: 150, width: double.infinity, fit: BoxFit.cover),
-                          Positioned(
-                            top: 4,
-                            right: 4,
-                            child: GestureDetector(
-                              onTap: _clearImage,
-                              child: Container(
-                                decoration: const BoxDecoration(
-                                  color: Colors.black54,
-                                  shape: BoxShape.circle,
-                                ),
-                                padding: const EdgeInsets.all(4),
-                                child: const Icon(Icons.close, color: Colors.white),
-                              ),
-                            ),
-                          )
-                        ],
-                      ),
-              ),
-              const SizedBox(height: 16),
+              // Image Picker
+              _buildImagePicker(),
 
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Recipe Name'),
-                validator: (value) => value?.isEmpty ?? true ? 'Please enter a name' : null,
-              ),
-              TextFormField(
-                controller: _prepTimeController,
-                decoration: const InputDecoration(labelText: 'Prep Time (minutes)'),
-                keyboardType: TextInputType.number,
-              ),
-              TextFormField(
-                controller: _cookTimeController,
-                decoration: const InputDecoration(labelText: 'Cook Time (minutes)'),
-                keyboardType: TextInputType.number,
-              ),
-              TextFormField(
-                controller: _servingsController,
-                decoration: const InputDecoration(labelText: 'Servings'),
-                keyboardType: TextInputType.number,
-              ),
-              TextFormField(
-                controller: _caloriesController,
-                decoration: const InputDecoration(labelText: 'Calories per Serving'),
-                keyboardType: TextInputType.number,
-              ),
-              TextFormField(
-                controller: _cuisineController,
-                decoration: const InputDecoration(labelText: 'Cuisine'),
-              ),
-              TextFormField(
-                controller: _difficultyController,
-                decoration: const InputDecoration(labelText: 'Difficulty (Easy/Medium/Hard)'),
-              ),
-
-              // Ingredients section
-              const SizedBox(height: 16),
-              const Text('Ingredients', style: TextStyle(fontWeight: FontWeight.bold)),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _ingredientController,
-                      decoration: const InputDecoration(labelText: 'Add Ingredient'),
+              // Basic Info Section
+              _buildSectionCard(
+                title: 'Basic Information',
+                icon: Icons.info_outline,
+                child: Column(
+                  children: [
+                    _buildStyledTextField(
+                      controller: _nameController,
+                      label: 'Recipe Name',
+                      hint: 'Enter recipe name',
+                      prefixIcon: Icons.restaurant_menu,
+                      validator: (value) => value?.isEmpty ?? true ? 'Please enter a name' : null,
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.add),
-                    onPressed: () => _addItem(_ingredients, _ingredientController.text, _ingredientController),
-                  ),
-                ],
-              ),
-              ..._ingredients.asMap().entries.map((entry) => ListTile(
-                    title: Text(entry.value),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.remove),
-                      onPressed: () => _removeItem(_ingredients, entry.key),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildStyledTextField(
+                            controller: _prepTimeController,
+                            label: 'Prep Time',
+                            hint: 'Minutes',
+                            prefixIcon: Icons.timer,
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _buildStyledTextField(
+                            controller: _cookTimeController,
+                            label: 'Cook Time',
+                            hint: 'Minutes',
+                            prefixIcon: Icons.local_fire_department,
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                      ],
                     ),
-                  )),
-
-              // Instructions section
-              const SizedBox(height: 16),
-              const Text('Instructions', style: TextStyle(fontWeight: FontWeight.bold)),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _instructionController,
-                      decoration: const InputDecoration(labelText: 'Add Instruction'),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildStyledTextField(
+                            controller: _servingsController,
+                            label: 'Servings',
+                            hint: '4',
+                            prefixIcon: Icons.people,
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _buildStyledTextField(
+                            controller: _caloriesController,
+                            label: 'Calories',
+                            hint: 'Per serving',
+                            prefixIcon: Icons.local_fire_department_outlined,
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.add),
-                    onPressed: () => _addItem(_instructions, _instructionController.text, _instructionController),
-                  ),
-                ],
-              ),
-              ..._instructions.asMap().entries.map((entry) => ListTile(
-                    title: Text(entry.value),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.remove),
-                      onPressed: () => _removeItem(_instructions, entry.key),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildStyledTextField(
+                            controller: _cuisineController,
+                            label: 'Cuisine',
+                            hint: 'Italian, Chinese, etc.',
+                            prefixIcon: Icons.public,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _buildStyledTextField(
+                            controller: _difficultyController,
+                            label: 'Difficulty',
+                            hint: 'Easy, Medium, Hard',
+                            prefixIcon: Icons.bar_chart,
+                          ),
+                        ),
+                      ],
                     ),
-                  )),
-
-              // Tags section
-              const SizedBox(height: 16),
-              const Text('Tags', style: TextStyle(fontWeight: FontWeight.bold)),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _tagController,
-                      decoration: const InputDecoration(labelText: 'Add Tag'),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.add),
-                    onPressed: () => _addItem(_tags, _tagController.text, _tagController),
-                  ),
-                ],
-              ),
-              Wrap(
-                spacing: 8,
-                children: _tags
-                    .map((tag) => Chip(
-                          label: Text(tag),
-                          onDeleted: () => _removeItem(_tags, _tags.indexOf(tag)),
-                        ))
-                    .toList(),
-              ),
-
-              // Meal Types section
-              const SizedBox(height: 16),
-              const Text('Meal Types', style: TextStyle(fontWeight: FontWeight.bold)),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _mealTypeController,
-                      decoration: const InputDecoration(labelText: 'Add Meal Type'),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.add),
-                    onPressed: () => _addItem(_mealTypes, _mealTypeController.text, _mealTypeController),
-                  ),
-                ],
-              ),
-              Wrap(
-                spacing: 8,
-                children: _mealTypes
-                    .map((type) => Chip(
-                          label: Text(type),
-                          onDeleted: () => _removeItem(_mealTypes, _mealTypes.indexOf(type)),
-                        ))
-                    .toList(),
-              ),
-
-              const SizedBox(height: 24),
-              Center(
-                child: ElevatedButton(
-                  onPressed: _submitForm,
-                  child: const Text('Save Recipe'),
+                  ],
                 ),
               ),
+
+              // Ingredients Section
+              _buildListSection(
+                title: 'Ingredients',
+                icon: Icons.shopping_cart,
+                items: _ingredients,
+                controller: _ingredientController,
+                hintText: 'Add an ingredient',
+              ),
+
+              // Instructions Section
+              _buildListSection(
+                title: 'Instructions',
+                icon: Icons.list_alt,
+                items: _instructions,
+                controller: _instructionController,
+                hintText: 'Add cooking instruction',
+              ),
+
+              // Tags Section
+              _buildListSection(
+                title: 'Tags',
+                icon: Icons.label,
+                items: _tags,
+                controller: _tagController,
+                hintText: 'Add a tag',
+                useChips: true,
+              ),
+
+              // Meal Types Section
+              _buildListSection(
+                title: 'Meal Types',
+                icon: Icons.schedule,
+                items: _mealTypes,
+                controller: _mealTypeController,
+                hintText: 'Breakfast, Lunch, Dinner',
+                useChips: true,
+              ),
+
+              // Save Button
+              const SizedBox(height: 20),
+              Container(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: _submitForm,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).primaryColor,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 3,
+                    shadowColor: Theme.of(context).primaryColor.withOpacity(0.3),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.save, size: 24),
+                      SizedBox(width: 8),
+                      Text(
+                        'Save Recipe',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 40),
             ],
           ),
         ),
