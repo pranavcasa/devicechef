@@ -30,4 +30,17 @@ Future<bool> login(String email, String password) async {
     await prefs.clear();
     notifyListeners();
   }
+  Future<void> fetchProfile() async {
+  final prefs = await SharedPreferences.getInstance();
+  final savedToken = prefs.getString('token');
+  if (savedToken != null) {
+    _token = savedToken;
+    final profileData = await AuthService.getProfile(savedToken);
+    if (profileData != null) {
+      _user = profileData;
+      notifyListeners();
+    }
+  }
+}
+
 }
